@@ -6,7 +6,7 @@ An easy-to-use, configurable, cross-platform keyboard mouse emulator, written us
 
 # Acknowledgements
 
-This project was constructed using a fork of the [electron-boilerplate](https://github.com/szwacz/electron-boilerplate) project, maintained by szwacz and fellow contributors.   
+This project was constructed using a fork of the [electron-boilerplate](https://github.com/szwacz/electron-boilerplate) project.
 
 # License
 
