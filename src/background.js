@@ -88,6 +88,11 @@ function saveEmulationParameters(emulationParametersJsonFilePath, emulationParam
   }
 }
 
+function moveMouse(xDelta, yDelta) {
+  const currentPos = robot.getMousePos();
+  robot.moveMouse(currentPos.x + xDelta, currentPos.y + yDelta);
+}
+
 function setGlobalKeyboardShortcuts(emulationParameters) {
   const movementSpeed = emulationParameters.mouseMovementParameters.movementSpeed;
   const movementTriggerKeyBinding =
@@ -111,8 +116,7 @@ function setGlobalKeyboardShortcuts(emulationParameters) {
 
   // Register up-key callback
   keyBindingRegistrationResult = globalShortcut.register(upKeyBinding, () => {
-    const currentPos = robot.getMousePos();
-    robot.moveMouse(currentPos.x, currentPos.y - movementSpeed);
+    moveMouse(0, -movementSpeed);
   });
 
   if (!keyBindingRegistrationResult) {
@@ -123,8 +127,7 @@ function setGlobalKeyboardShortcuts(emulationParameters) {
 
   // Register right-key callback
   keyBindingRegistrationResult = globalShortcut.register(rightKeyBinding, () => {
-    const currentPos = robot.getMousePos();
-    robot.moveMouse(currentPos.x + movementSpeed, currentPos.y);
+    moveMouse(movementSpeed, 0);
   });
 
   if (!keyBindingRegistrationResult) {
@@ -135,8 +138,7 @@ function setGlobalKeyboardShortcuts(emulationParameters) {
 
   // Register down-key callback
   keyBindingRegistrationResult = globalShortcut.register(downKeyBinding, () => {
-    const currentPos = robot.getMousePos();
-    robot.moveMouse(currentPos.x, currentPos.y + movementSpeed);
+    moveMouse(0, movementSpeed);
   });
 
   if (!keyBindingRegistrationResult) {
@@ -147,8 +149,7 @@ function setGlobalKeyboardShortcuts(emulationParameters) {
 
   // Register left-key callback
   keyBindingRegistrationResult = globalShortcut.register(leftKeyBinding, () => {
-    const currentPos = robot.getMousePos();
-    robot.moveMouse(currentPos.x - movementSpeed, currentPos.y);
+    moveMouse(-movementSpeed, 0);
   });
 
   if (!keyBindingRegistrationResult) {
@@ -195,8 +196,6 @@ if (env.name !== 'production') {
   const userDataPath = app.getPath('userData');
   app.setPath('userData', `${userDataPath} (${env.name})`);
 }
-
-// Todo: define function to move mouse - for use in the keypress event callbacks
 
 app.on('ready', () => {
   // Boilerplate
