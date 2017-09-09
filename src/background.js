@@ -134,7 +134,6 @@ function setGlobalKeyboardShortcuts(emulationParameters) {
   }
 
   // Register down-key callback
-  // Todo: Check return value
   keyBindingRegistrationResult = globalShortcut.register(downKeyBinding, () => {
     const currentPos = robot.getMousePos();
     robot.moveMouse(currentPos.x, currentPos.y + movementSpeed);
@@ -147,7 +146,6 @@ function setGlobalKeyboardShortcuts(emulationParameters) {
   }
 
   // Register left-key callback
-  // Todo: Check return value
   keyBindingRegistrationResult = globalShortcut.register(leftKeyBinding, () => {
     const currentPos = robot.getMousePos();
     robot.moveMouse(currentPos.x - movementSpeed, currentPos.y);
