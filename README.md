@@ -25,4 +25,4 @@ Released under the MIT license.
 To run the application, clone [this repo](https://github.com/adlawren/bailey), and run the following in the root directory of the cloned repo:
 
 > npm install  
-> npm start
+> gulp start
