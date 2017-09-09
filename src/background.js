@@ -19,7 +19,136 @@ const { URL } = require('url');
 // in config/env_xxx.json file.
 import env from './env';
 
-var appIcon = null;
+// todo: finalize choice of filename
+// todo: also, harden; what happens when the file doesn't exist?
+const emulationParametersJsonFilePath = '/home/adlawren/Git-Repos/bailey/test.json';
+
+// Set globally to permit access across application initialization and closure methods
+// todo: should defaults be specified here?
+var loadedEmulationParameters = null;
+
+// Set globally to preserve state from garbage collection when app is minimized
+// See: https://github.com/electron/electron/issues/822#issuecomment-62981963
+var systemTrayAppIcon = null;
+
+function MouseMovementKeyBindings(upKeyBinding, rightKeyBinding, downKeyBinding, leftKeyBinding) {
+  this.upKeyBinding = upKeyBinding;
+  this.rightKeyBinding = rightKeyBinding;
+  this.downKeyBinding = downKeyBinding;
+  this.leftKeyBinding = leftKeyBinding;
+}
+
+function MouseClickKeyBindings(leftClickKeyBinding, rightClickKeyBinding) {
+  this.leftClickKeyBinding = leftClickKeyBinding;
+  this.rightClickKeyBinding = rightClickKeyBinding;
+}
+
+function MouseMovementParameters(movementSpeed, movementTriggerKeyBinding) {
+  this.movementSpeed = movementSpeed;
+  this.movementTriggerKeyBinding = movementTriggerKeyBinding;
+}
+
+function EmulationParameters(mouseMovementKeyBindings, mouseClickKeyBindings, mouseMovementParameters) {
+  this.mouseMovementKeyBindings = mouseMovementKeyBindings;
+  this.mouseClickKeyBindings = mouseClickKeyBindings;
+  this.mouseMovementParameters = mouseMovementParameters;
+}
+
+function loadEmulationParameters(emulationParametersJsonFilePath) {
+  var fileData = null;
+  if (fs.existsSync(emulationParametersJsonFilePath))
+  {
+    let stats = fs.statSync(emulationParametersJsonFilePath);
+    let fd = fs.openSync(emulationParametersJsonFilePath, "r");
+
+    var fileDataBuffer = new Buffer(stats.size);
+    fs.readSync(fd, fileDataBuffer, 0, fileDataBuffer.length, null);
+    
+    fileData = fileDataBuffer.toString("utf8", 0, fileDataBuffer.length);
+    
+    fs.closeSync(fd);
+  }
+
+  // Parse JSON into (EmulationParameters) object
+  // todo: validate object state? Look for missing parameters?
+  let parsedJson = JSON.parse(fileData);
+  return parsedJson;
+}
+
+function saveEmulationParameters(emulationParametersJsonFilePath, emulationParameters) {
+  let stringifiedEmulationParameters = JSON.stringify(emulationParameters);
+  if (fs.existsSync(emulationParametersJsonFilePath))
+  {
+    let stats = fs.statSync(emulationParametersJsonFilePath);
+    let fd = fs.openSync(emulationParametersJsonFilePath, "w");
+
+    // Convert string to buffer
+    var buffer = new Buffer.from(stringifiedEmulationParameters);
+    fs.writeSync(fd, buffer, 0, buffer.length, null);
+    
+    fs.closeSync(fd);
+  }
+}
+
+function setGlobalKeyboardShortcuts(emulationParameters) {
+  const movementSpeed = emulationParameters.mouseMovementParameters.movementSpeed;
+  const movementTriggerKeyBinding =
+    emulationParameters.mouseMovementParameters.movementTriggerKeyBinding;
+
+  const upKeyBinding = `${movementTriggerKeyBinding}+
+    ${emulationParameters.mouseMovementKeyBindings.upKeyBinding}`;
+  const rightKeyBinding = `${movementTriggerKeyBinding}+
+    ${emulationParameters.mouseMovementKeyBindings.rightKeyBinding}`;
+  const downKeyBinding = `${movementTriggerKeyBinding}+
+    ${emulationParameters.mouseMovementKeyBindings.downKeyBinding}`;
+  const leftKeyBinding = `${movementTriggerKeyBinding}+
+    ${emulationParameters.mouseMovementKeyBindings.leftKeyBinding}`;
+
+  const leftClickKeyBinding = `${movementTriggerKeyBinding}+
+    ${emulationParameters.mouseClickKeyBindings.leftClickKeyBinding}`;
+  const rightClickKeyBinding = `${movementTriggerKeyBinding}+
+    ${emulationParameters.mouseClickKeyBindings.rightClickKeyBinding}`;
+
+  // Register up-key callback
+  // Todo: Check return value 
+  globalShortcut.register(upKeyBinding, () => {
+    //dialog.showMessageBox({ message: "Moving mouse up", buttons: ["OK"] }); // Todo: rm
+
+    const currentPos = robot.getMousePos();
+    robot.moveMouse(currentPos.x, currentPos.y - movementSpeed);
+  });
+
+  // Register right-key callback
+  // Todo: Check return value
+  globalShortcut.register(rightKeyBinding, () => {
+    const currentPos = robot.getMousePos();
+    robot.moveMouse(currentPos.x + movementSpeed, currentPos.y);
+  });
+
+  // Register down-key callback
+  // Todo: Check return value
+  globalShortcut.register(downKeyBinding, () => {
+    const currentPos = robot.getMousePos();
+    robot.moveMouse(currentPos.x, currentPos.y + movementSpeed);
+  });
+
+  // Register left-key callback
+  // Todo: Check return value
+  globalShortcut.register(leftKeyBinding, () => {
+    const currentPos = robot.getMousePos();
+    robot.moveMouse(currentPos.x - movementSpeed, currentPos.y);
+  });
+
+  // Register left-click callback
+  globalShortcut.register(leftClickKeyBinding, () => {
+    robot.mouseClick('left');
+  });
+
+  // Register right-click callback
+  globalShortcut.register(rightClickKeyBinding, () => {
+    robot.mouseClick('right');
+  });
+}
 
 const setApplicationMenu = () => {
   const menus = [editMenuTemplate];
@@ -58,53 +187,11 @@ app.on('ready', () => {
     mainWindow.openDevTools();
   }
 
-  //// JSON test
-  // Read file
-  const fileName = '/home/adlawren/Git-Repos/bailey/test.json';
-
-  var data = null;
-  if (fs.existsSync(fileName))
-  {
-    let stats = fs.statSync(fileName);
-    let fd = fs.openSync(fileName, "r");
-
-    var buffer = new Buffer(stats.size);
-    
-    fs.readSync(fd, buffer, 0, buffer.length, null);
-    
-    data = buffer.toString("utf8", 0, buffer.length);
-    // dialog.showMessageBox({ message: "data" + data, buttons: ["OK"] });
-    
-    fs.closeSync(fd);
-  }
-
-  // Parse JSON into object
-  let parsedJson = JSON.parse(data);
-  dialog.showMessageBox({ message: "field1 : " + parsedJson['field1'], buttons: ["OK"] });
-
-  // Update Json value
-  parsedJson['field1'] = 'updated';
-
-  // Write json to new file
-  let stringified = JSON.stringify(parsedJson);
-  dialog.showMessageBox({ message: "stringified : " + stringified, buttons: ["OK"] });
-
-  if (fs.existsSync(fileName))
-  {
-    let stats = fs.statSync(fileName);
-    let fd = fs.openSync(fileName, "w");
-
-    // Convert string to buffer
-    var buffer = new Buffer.from(stringified);
-    
-    fs.writeSync(fd, buffer, 0, buffer.length, null);
-    
-    fs.closeSync(fd);
-  }
-
+  // Load emulation parameters from JSON file
+  loadedEmulationParameters = loadEmulationParameters(emulationParametersJsonFilePath);
 
   // Configure the tray icon
-  appIcon = new Tray('./batman_logo_creative_commons_attribution_free_16_by_16.png');
+  systemTrayAppIcon = new Tray('./batman_logo_creative_commons_attribution_free_16_by_16.png');
 
   var contextMenu = Menu.buildFromTemplate([
     { label: 'Show App', click:  function(){ // Todo: relabel
@@ -116,69 +203,20 @@ app.on('ready', () => {
     }}
   ]);
 
-  appIcon.setContextMenu(contextMenu);
-  appIcon.setHighlightMode('always');
+  systemTrayAppIcon.setContextMenu(contextMenu);
+  systemTrayAppIcon.setHighlightMode('always');
 
   mainWindow.on('minimize', function (event) {
     event.preventDefault()
     mainWindow.hide();
   })
 
-  //// Test
-
-  // Params
-  const delta = 25;
-
-  const modifier = 'CommandOrControl+Shift';
-
-  const upKeyLabel = `${modifier}+I`;
-  const rightKeyLabel = `${modifier}+L`;
-  const downKeyLabel = `${modifier}+K`;
-  const leftKeyLabel = `${modifier}+J`;
-  const leftClickKeyLabel = `Shift+U`; //`${modifier}+U`;
-  const rightClickKeyLabel = `${modifier}+O`;
-
-  // Register up-key callback
-  // Todo: Check return value 
-  globalShortcut.register(upKeyLabel, () => {
-    //dialog.showMessageBox({ message: "Moving mouse up", buttons: ["OK"] }); // Todo: rm
-
-    const currentPos = robot.getMousePos();
-    robot.moveMouse(currentPos.x, currentPos.y - delta);
-  });
-
-  // Register right-key callback
-  // Todo: Check return value
-  globalShortcut.register(rightKeyLabel, () => {
-    const currentPos = robot.getMousePos();
-    robot.moveMouse(currentPos.x + delta, currentPos.y);
-  });
-
-  // Register down-key callback
-  // Todo: Check return value
-  globalShortcut.register(downKeyLabel, () => {
-    const currentPos = robot.getMousePos();
-    robot.moveMouse(currentPos.x, currentPos.y + delta);
-  });
-
-  // Register left-key callback
-  // Todo: Check return value
-  globalShortcut.register(leftKeyLabel, () => {
-    const currentPos = robot.getMousePos();
-    robot.moveMouse(currentPos.x - delta, currentPos.y);
-  });
-
-  // Register left-click callback
-  globalShortcut.register(leftClickKeyLabel, () => {
-    robot.mouseClick('left');
-  });
-
-  // Register right-click callback
-  globalShortcut.register(rightClickKeyLabel, () => {
-    robot.mouseClick('right');
-  });
+  setGlobalKeyboardShortcuts(loadedEmulationParameters);
 });
 
 app.on('window-all-closed', () => {
+  // Save emulation parameters
+  saveEmulationParameters(emulationParametersJsonFilePath, loadedEmulationParameters);
+
   app.quit();
 });
