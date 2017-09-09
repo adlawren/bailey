@@ -23,11 +23,11 @@ const emulationParametersJsonFilePath = '/home/adlawren/Git-Repos/bailey/test.js
 
 // Set globally to permit access across application initialization and closure methods
 // todo: should defaults be specified here?
-var loadedEmulationParameters = null;
+let loadedEmulationParameters = null;
 
 // Set globally to preserve state from garbage collection when app is minimized
 // See: https://github.com/electron/electron/issues/822#issuecomment-62981963
-var systemTrayAppIcon = null;
+let systemTrayAppIcon = null;
 
 function MouseMovementKeyBindings(upKeyBinding, rightKeyBinding, downKeyBinding, leftKeyBinding) {
   this.upKeyBinding = upKeyBinding;
@@ -53,13 +53,13 @@ function EmulationParameters(mouseMovementKeyBindings, mouseClickKeyBindings, mo
 }
 
 function loadEmulationParameters(emulationParametersJsonFilePath) {
-  var fileData = null;
+  let fileData = null;
   if (fs.existsSync(emulationParametersJsonFilePath))
   {
     let stats = fs.statSync(emulationParametersJsonFilePath);
     let fd = fs.openSync(emulationParametersJsonFilePath, "r");
 
-    var fileDataBuffer = new Buffer(stats.size);
+    let fileDataBuffer = new Buffer(stats.size);
     fs.readSync(fd, fileDataBuffer, 0, fileDataBuffer.length, null);
     
     fileData = fileDataBuffer.toString("utf8", 0, fileDataBuffer.length);
@@ -81,7 +81,7 @@ function saveEmulationParameters(emulationParametersJsonFilePath, emulationParam
     let fd = fs.openSync(emulationParametersJsonFilePath, "w");
 
     // Convert string to buffer
-    var buffer = new Buffer.from(stringifiedEmulationParameters);
+    let buffer = new Buffer.from(stringifiedEmulationParameters);
     fs.writeSync(fd, buffer, 0, buffer.length, null);
     
     fs.closeSync(fd);
@@ -107,45 +107,79 @@ function setGlobalKeyboardShortcuts(emulationParameters) {
   const rightClickKeyBinding = `${movementTriggerKeyBinding}+
     ${emulationParameters.mouseClickKeyBindings.rightClickKeyBinding}`;
 
-  // Register up-key callback
-  // Todo: Check return value 
-  globalShortcut.register(upKeyBinding, () => {
-    //dialog.showMessageBox({ message: "Moving mouse up", buttons: ["OK"] }); // Todo: rm
+  let keyBindingRegistrationResult = null;
 
+  // Register up-key callback
+  keyBindingRegistrationResult = globalShortcut.register(upKeyBinding, () => {
     const currentPos = robot.getMousePos();
     robot.moveMouse(currentPos.x, currentPos.y - movementSpeed);
   });
 
+  if (!keyBindingRegistrationResult) {
+    dialog.showMessageBox({ message: "Failed to register 'up' keybinding", buttons: ["OK"] }, () => {
+      app.quit();
+    });
+  }
+
   // Register right-key callback
-  // Todo: Check return value
-  globalShortcut.register(rightKeyBinding, () => {
+  keyBindingRegistrationResult = globalShortcut.register(rightKeyBinding, () => {
     const currentPos = robot.getMousePos();
     robot.moveMouse(currentPos.x + movementSpeed, currentPos.y);
   });
 
+  if (!keyBindingRegistrationResult) {
+    dialog.showMessageBox({ message: "Failed to register 'right' keybinding", buttons: ["OK"] }, () => {
+      app.quit();
+    });
+  }
+
   // Register down-key callback
   // Todo: Check return value
-  globalShortcut.register(downKeyBinding, () => {
+  keyBindingRegistrationResult = globalShortcut.register(downKeyBinding, () => {
     const currentPos = robot.getMousePos();
     robot.moveMouse(currentPos.x, currentPos.y + movementSpeed);
   });
 
+  if (!keyBindingRegistrationResult) {
+    dialog.showMessageBox({ message: "Failed to register 'down' keybinding", buttons: ["OK"] }, () => {
+      app.quit();
+    });
+  }
+
   // Register left-key callback
   // Todo: Check return value
-  globalShortcut.register(leftKeyBinding, () => {
+  keyBindingRegistrationResult = globalShortcut.register(leftKeyBinding, () => {
     const currentPos = robot.getMousePos();
     robot.moveMouse(currentPos.x - movementSpeed, currentPos.y);
   });
 
+  if (!keyBindingRegistrationResult) {
+    dialog.showMessageBox({ message: "Failed to register 'left' keybinding", buttons: ["OK"] }, () => {
+      app.quit();
+    });
+  }
+
   // Register left-click callback
-  globalShortcut.register(leftClickKeyBinding, () => {
+  keyBindingRegistrationResult = globalShortcut.register(leftClickKeyBinding, () => {
     robot.mouseClick('left');
   });
 
+  if (!keyBindingRegistrationResult) {
+    dialog.showMessageBox({ message: "Failed to register 'left click' keybinding", buttons: ["OK"] }, () => {
+      app.quit();
+    });
+  }
+
   // Register right-click callback
-  globalShortcut.register(rightClickKeyBinding, () => {
+  keyBindingRegistrationResult = globalShortcut.register(rightClickKeyBinding, () => {
     robot.mouseClick('right');
   });
+
+  if (!keyBindingRegistrationResult) {
+    dialog.showMessageBox({ message: "Failed to register 'right click' keybinding", buttons: ["OK"] }, () => {
+      app.quit();
+    });
+  }
 }
 
 const setApplicationMenu = () => {
@@ -191,7 +225,7 @@ app.on('ready', () => {
   // Configure the tray icon
   systemTrayAppIcon = new Tray('./batman_logo_creative_commons_attribution_free_16_by_16.png');
 
-  var contextMenu = Menu.buildFromTemplate([
+  let contextMenu = Menu.buildFromTemplate([
     { label: 'Show App', click:  function(){ // Todo: relabel
       mainWindow.show();
     }},
