@@ -3,21 +3,19 @@
 // It doesn't have any windows which you can see on screen, but we can open
 // window from here.
 
-import path from 'path';
-import url from 'url';
 import { app, Menu, Tray, globalShortcut, dialog } from 'electron';
-import { devMenuTemplate } from './menu/dev_menu_template';
-import { editMenuTemplate } from './menu/edit_menu_template';
-import createWindow from './helpers/window';
+import fs from 'fs';
+import path from 'path';
 import robot from 'robotjs';
-
-// JSON test
-const fs = require('fs');
-const { URL } = require('url');
+import url from 'url';
 
 // Special module holding environment variables which you declared
 // in config/env_xxx.json file.
 import env from './env';
+
+import createWindow from './helpers/window';
+import { devMenuTemplate } from './menu/dev_menu_template';
+import { editMenuTemplate } from './menu/edit_menu_template';
 
 // todo: finalize choice of filename
 // todo: also, harden; what happens when the file doesn't exist?
