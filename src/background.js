@@ -19,7 +19,7 @@ import { editMenuTemplate } from './menu/edit_menu_template';
 
 // todo: finalize choice of filename
 // todo: also, harden; what happens when the file doesn't exist?
-const emulationParametersJsonFilePath = '/home/adlawren/Git-Repos/bailey/test.json';
+const emulationParametersJsonFilePath = '/home/adlawren/Git-Repos/piqa/test.json';
 
 // Set globally to permit access across application initialization and closure methods
 // todo: should defaults be specified here?
